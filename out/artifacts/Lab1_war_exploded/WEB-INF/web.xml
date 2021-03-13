@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+    <servlet>
+        <servlet-name>RoutesServlet</servlet-name>
+        <servlet-class>app.restapi.servlets.RoutesServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>RoutesByIdServlet</servlet-name>
+        <servlet-class>app.restapi.servlets.RoutesByIdServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>FarRouteServlet</servlet-name>
+        <servlet-class>app.restapi.servlets.FarRouteServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>GroupCoordinatesServlet</servlet-name>
+        <servlet-class>app.restapi.servlets.GroupCoordinatesServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>HigherDistanceServlet</servlet-name>
+        <servlet-class>app.restapi.servlets.HigherDistanceServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>RoutesServlet</servlet-name>
+        <url-pattern>/routes</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>RoutesByIdServlet</servlet-name>
+        <url-pattern>/routes/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>FarRouteServlet</servlet-name>
+        <url-pattern>/far-route</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>GroupCoordinatesServlet</servlet-name>
+        <url-pattern>/group-coordinates</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>HigherDistanceServlet</servlet-name>
+        <url-pattern>/higher-distance</url-pattern>
+    </servlet-mapping>
+
+    <filter>
+        <filter-name>CORSFilter</filter-name>
+        <filter-class>app.restapi.servlets.CORSFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>CORSFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+</web-app>
