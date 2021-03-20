@@ -3,6 +3,7 @@ package app.restapi.servlets;
 import app.restapi.models.Route;
 import app.restapi.repository.RouteRepository;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -11,8 +12,10 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 // "/routes"
 public class RoutesServlet extends HttpServlet {
@@ -28,7 +31,7 @@ public class RoutesServlet extends HttpServlet {
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }
-        gson = new Gson();
+        gson = new GsonBuilder().setDateFormat("yyyy-MM-dd").create();
     }
 
     @Override
@@ -71,7 +74,7 @@ public class RoutesServlet extends HttpServlet {
                 tmp = paramsMap.get("filter_by").split(",");
                 String[] a;
                 for (String filterStr : tmp) {
-                    a = filterStr.split("!");
+                    a = filterStr.split("=");
                     if (a.length > 1) {
                         filters.put(a[0], a[1]);
                     }
@@ -83,7 +86,7 @@ public class RoutesServlet extends HttpServlet {
                 tmp = paramsMap.get("sort_by").split(",");
                 String[] a;
                 for (String sortStr : tmp) {
-                    a = sortStr.split("!");
+                    a = sortStr.split(":");
                     if (a.length > 1) {
                         sorts.put(a[0], a[1]);
                     }
@@ -92,10 +95,18 @@ public class RoutesServlet extends HttpServlet {
 
             if (paramsMap.get("page_size") != null && !paramsMap.get("page_size").isEmpty()) {
                 pageSize = Integer.parseInt(paramsMap.get("page_size"));
+                if (pageSize < 0) {
+                    resp.setStatus(422);
+                    return;
+                }
             }
 
             if (paramsMap.get("page_number") != null && !paramsMap.get("page_number").isEmpty()) {
                 pageNumber = Integer.parseInt(paramsMap.get("page_number"));
+                if (pageNumber < 0) {
+                    resp.setStatus(422);
+                    return;
+                }
             }
 
             System.out.println("Filters: " + filters);
@@ -130,22 +141,11 @@ public class RoutesServlet extends HttpServlet {
         // POST /routes - добавление нового элемента в базу
 
         try {
-            String name = req.getParameter("name");
+            String body = req.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+            Route route = gson.fromJson(body, Route.class);
+            route.preInsertValidate();
 
-            float x = Float.parseFloat(req.getParameter("x"));
-            float y = Float.parseFloat(req.getParameter("y"));
-
-            long fromX = Long.parseLong(req.getParameter("from_x"));
-            long fromY = Long.parseLong(req.getParameter("from_y"));
-            long fromZ = Long.parseLong(req.getParameter("from_z"));
-            String fromName = req.getParameter("from_name");
-
-            long toX = Long.parseLong(req.getParameter("to_x"));
-            long toY = Long.parseLong(req.getParameter("to_y"));
-            long toZ = Long.parseLong(req.getParameter("to_z"));
-            String toName = req.getParameter("to_name");
-
-            repository.addRoute(name, x, y, fromX, fromY, fromZ, fromName, toX, toY, toZ, toName);
+            repository.addRoute(route);
             resp.setStatus(200);
         } catch (Exception ex) {
             ex.printStackTrace();

@@ -9,10 +9,6 @@ public class Coordinates {
 
     public Coordinates(float x, float y) {
         this.x = x;
-
-        if (y > MAX_Y_VAL) {
-            throw new IllegalArgumentException("Y should be less or equal to " + MAX_Y_VAL);
-        }
         this.y = y;
     }
 
@@ -29,9 +25,20 @@ public class Coordinates {
     }
 
     public void setY(float y) {
-        if (y > MAX_Y_VAL) {
+        this.y = y;
+    }
+
+    public void validate() {
+        if (this.y > MAX_Y_VAL) {
             throw new IllegalArgumentException("Y should be less or equal to " + MAX_Y_VAL);
         }
-        this.y = y;
+    }
+
+    @Override
+    public String toString() {
+        return "Coordinates{" +
+                "x=" + x +
+                ", y=" + y +
+                '}';
     }
 }

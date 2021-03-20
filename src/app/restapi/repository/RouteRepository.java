@@ -6,6 +6,7 @@ import app.restapi.models.Route;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,7 +23,7 @@ public class RouteRepository {
     private static final String INSERT_STATEMENT = "INSERT INTO \"routes\" (\"name\", x, y, \"from_x\", \"from_y\", \"from_z\", \"from_name\", \"to_x\", \"to_y\", \"to_z\", \"to_name\", \"distance\", \"creation_date\") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
     private static final String UPDATE_STATEMENT = "UPDATE \"routes\" SET ";
     private static final String DELETE_STATEMENT = "DELETE FROM \"routes\" WHERE ";
-
+    private static final long MIN_DISTANCE_VAL = 2;
     public RouteRepository(Connection connection) {
         this.connection = connection;
     }
@@ -354,6 +355,7 @@ public class RouteRepository {
                 y = result.getFloat("y");
 
                 Coordinates coordinates = new Coordinates(x, y);
+                coordinates.validate();
                 groups.put(count, coordinates);
             }
         } catch (SQLException ex) {
@@ -362,26 +364,36 @@ public class RouteRepository {
         return groups;
     }
 
-    public void addRoute(String name, float x, float y, long fromX, long fromY, long fromZ, String fromName, long toX, long toY, long toZ, String toName) {
+    public void addRoute(Route route) {
         try (PreparedStatement statement = connection.prepareStatement(INSERT_STATEMENT)) {
-            Coordinates coordinates = new Coordinates(x, y);
-            Location from = new Location(fromX, fromY, fromZ, fromName);
-            Location to = new Location(toX, toY, toZ, toName);
-            Route route = new Route(name, coordinates, from, to);
 
             statement.setString(1, route.getName());
             statement.setFloat(2, route.getCoordinates().getX());
             statement.setFloat(3, route.getCoordinates().getY());
 
-            statement.setLong(4, route.getFrom().getX());
-            statement.setLong(5, route.getFrom().getY());
-            statement.setLong(6, route.getFrom().getZ());
-            statement.setString(7, route.getFrom().getName());
+            if (route.getFrom() != null) {
+                statement.setLong(4, route.getFrom().getX());
+                statement.setLong(5, route.getFrom().getY());
+                statement.setLong(6, route.getFrom().getZ());
+                statement.setString(7, route.getFrom().getName());
+            } else {
+                statement.setLong(4, 0);
+                statement.setLong(5, 0);
+                statement.setLong(6, 0);
+                statement.setString(7, "");
+            }
 
-            statement.setLong(8, route.getTo().getX());
-            statement.setLong(9, route.getTo().getY());
-            statement.setLong(10, route.getTo().getZ());
-            statement.setString(11, route.getTo().getName());
+            if (route.getTo() != null) {
+                statement.setLong(8, route.getTo().getX());
+                statement.setLong(9, route.getTo().getY());
+                statement.setLong(10, route.getTo().getZ());
+                statement.setString(11, route.getTo().getName());
+            } else {
+                statement.setLong(8, 0);
+                statement.setLong(9, 0);
+                statement.setLong(10, 0);
+                statement.setString(11, "");
+            }
 
             statement.setLong(12, route.getDistance());
             statement.setTimestamp(13, new Timestamp(route.getCreationDate().getTime()));
@@ -392,17 +404,17 @@ public class RouteRepository {
         }
     }
 
-    public void updateRoute(int id, String name, Coordinates coordinates, Location from, Location to) {
+    public void updateRoute(int id, Route route) {
         StringBuilder stringBuilder = new StringBuilder(UPDATE_STATEMENT);
 
         try {
             int counter = 0;
-            if (name != null) {
+            if (route.getName() != null) {
                 stringBuilder.append(" \"name\"= ? ");
                 counter++;
             }
 
-            if (coordinates != null) {
+            if (route.getCoordinates() != null) {
                 if (counter > 0) {
                     stringBuilder.append(",");
                 }
@@ -410,43 +422,54 @@ public class RouteRepository {
                 counter++;
             }
 
-            if (from != null && to != null) {
+            if (route.getFrom() != null) {
                 if (counter > 0) {
                     stringBuilder.append(",");
                 }
-                stringBuilder.append(" \"from_x\" = ?, \"from_y\" = ?, \"from_z\" = ?, \"from_name\" = ?, ");
-                stringBuilder.append(" \"to_x\" = ?, \"to_y\" = ?, \"to_z\" = ?, \"to_name\" = ?, ");
-                stringBuilder.append(" \"distance\" = ? ");
+                stringBuilder.append(" \"from_x\" = ?, \"from_y\" = ?, \"from_z\" = ?, \"from_name\" = ? ");
+                counter++;
             }
 
+            if (route.getTo() != null) {
+                if (counter > 0) {
+                    stringBuilder.append(",");
+                }
+                stringBuilder.append(" \"to_x\" = ?, \"to_y\" = ?, \"to_z\" = ?, \"to_name\" = ? ");
+                counter++;
+            }
+
+            if (counter > 0) {
+                stringBuilder.append(",");
+            }
+            stringBuilder.append(" \"distance\" = ? ");
             stringBuilder.append(" WHERE \"id\" = ?;");
             PreparedStatement statement = connection.prepareStatement(stringBuilder.toString());
 
             int params = 0;
-            if (name != null) {
-                statement.setString(++params, name);
+            if (route.getName() != null) {
+                statement.setString(++params, route.getName());
             }
 
-            if (coordinates != null) {
-                statement.setFloat(++params, coordinates.getX());
-                statement.setFloat(++params, coordinates.getY());
+            if (route.getCoordinates() != null) {
+                statement.setFloat(++params, route.getCoordinates().getX());
+                statement.setFloat(++params, route.getCoordinates().getY());
             }
 
-            if (from != null && to != null) {
-                long distance = Route.calculateDistance(from, to);
-
-                statement.setLong(++params, from.getX());
-                statement.setLong(++params, from.getY());
-                statement.setLong(++params, from.getZ());
-                statement.setString(++params, from.getName());
-
-                statement.setLong(++params, to.getX());
-                statement.setLong(++params, to.getY());
-                statement.setLong(++params, to.getZ());
-                statement.setString(++params, to.getName());
-
-                statement.setLong(++params, distance);
+            if (route.getFrom() != null) {
+                statement.setLong(++params, route.getFrom().getX());
+                statement.setLong(++params, route.getFrom().getY());
+                statement.setLong(++params, route.getFrom().getZ());
+                statement.setString(++params, route.getFrom().getName());
             }
+
+            if (route.getTo() != null) {
+                statement.setLong(++params, route.getTo().getX());
+                statement.setLong(++params, route.getTo().getY());
+                statement.setLong(++params, route.getTo().getZ());
+                statement.setString(++params, route.getTo().getName());
+            }
+
+            statement.setLong(++params, route.getDistance());
 
             statement.setInt(++params, id);
             statement.execute();

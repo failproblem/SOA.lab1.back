@@ -14,7 +14,45 @@ public class Route {
 
     private static final long MIN_DISTANCE_VAL = 2;
 
-    public Route(String name, Coordinates coordinates, Location from, Location to) {
+    public Route(int id, String name, Coordinates coordinates, Date creationDate, Location from, Location to, long distance) {
+        this.name = name;
+        this.coordinates = coordinates;
+        this.from = from;
+        this.to = to;
+        this.distance = distance;
+        this.id = id;
+        this.creationDate = creationDate;
+
+        fullValidate();
+    }
+
+    public void preInsertValidate() {
+        this.creationDate = this.creationDate == null ? new Date() : this.creationDate;
+
+        validate();
+    }
+
+    public void preUpdateValidate() {
+        if (id < 1) {
+            throw new IllegalArgumentException("ID should not be less than 1");
+        }
+
+        validate();
+    }
+
+    public void fullValidate() {
+        if (id < 1) {
+            throw new IllegalArgumentException("ID should not be less than 1");
+        }
+
+        if (creationDate == null) {
+            throw new IllegalArgumentException("Creation date is null");
+        }
+
+        validate();
+    }
+
+    private void validate() {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Name should not be empty");
         }
@@ -22,47 +60,19 @@ public class Route {
         if (coordinates == null) {
             throw new IllegalArgumentException("Coordinates are null");
         }
+        coordinates.validate();
 
-        if (from == null) {
-            throw new IllegalArgumentException("Location 'from' is null");
+        if (from != null) {
+            from.validate();
         }
 
-        if (to == null) {
-            throw new IllegalArgumentException("Location 'to' is null");
-        }
-
-        this.name = name;
-        this.coordinates = coordinates;
-        this.creationDate = new Date();
-        this.from = from;
-        this.to = to;
-
-        long distance = calculateDistance(from, to);
-        if (distance < MIN_DISTANCE_VAL) {
-            throw new IllegalArgumentException("Distance should not be less than " + MIN_DISTANCE_VAL);
-        }
-
-        this.distance = distance;
-    }
-
-    public Route(int id, String name, Coordinates coordinates, Date creationDate, Location from, Location to, long distance) {
-        this(name, coordinates, from, to);
-
-        if (id < 1) {
-            throw new IllegalArgumentException("ID should not be less than 1");
+        if (to != null) {
+            to.validate();
         }
 
         if (distance < MIN_DISTANCE_VAL) {
             throw new IllegalArgumentException("Distance should not be less than " + MIN_DISTANCE_VAL);
         }
-
-        if (creationDate == null) {
-            throw new IllegalArgumentException("Creation date is null");
-        }
-
-        this.id = id;
-        this.distance = distance;
-        this.creationDate = creationDate;
     }
 
     public int getId() {
@@ -153,5 +163,18 @@ public class Route {
         long z2 = to.getZ();
 
         return (long) Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2) + Math.pow(z1 - z2, 2));
+    }
+
+    @Override
+    public String toString() {
+        return "Route{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", coordinates=" + coordinates +
+                ", creationDate=" + creationDate +
+                ", from=" + from +
+                ", to=" + to +
+                ", distance=" + distance +
+                '}';
     }
 }

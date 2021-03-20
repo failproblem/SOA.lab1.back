@@ -14,14 +14,6 @@ public class Location {
         this.y = y;
         this.z = z;
 
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Name should not be empty");
-        }
-
-        if (name.length() > MAX_NAME_LEN) {
-            throw new IllegalArgumentException("Name length should not be more than 561");
-        }
-
         this.name = name;
     }
 
@@ -54,14 +46,26 @@ public class Location {
     }
 
     public void setName(String name) {
-        if (name == null || name.trim().isEmpty()) {
+        this.name = name;
+    }
+
+    public void validate() {
+        if (this.name == null || this.name.trim().isEmpty()) {
             throw new IllegalArgumentException("Name should not be empty");
         }
 
-        if (name.length() > MAX_NAME_LEN) {
+        if (this.name.length() > MAX_NAME_LEN) {
             throw new IllegalArgumentException("Name length should not be more than 561");
         }
+    }
 
-        this.name = name;
+    @Override
+    public String toString() {
+        return "Location{" +
+                "x=" + x +
+                ", y=" + y +
+                ", z=" + z +
+                ", name='" + name + '\'' +
+                '}';
     }
 }

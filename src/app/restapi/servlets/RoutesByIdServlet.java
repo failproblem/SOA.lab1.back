@@ -5,6 +5,7 @@ import app.restapi.models.Location;
 import app.restapi.models.Route;
 import app.restapi.repository.RouteRepository;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
 import java.sql.SQLException;
+import java.util.stream.Collectors;
 
 // "/routes/*"
 public class RoutesByIdServlet extends HttpServlet {
@@ -29,7 +31,7 @@ public class RoutesByIdServlet extends HttpServlet {
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }
-        gson = new Gson();
+        gson = new GsonBuilder().setDateFormat("yyyy-MM-dd").create();
     }
 
     @Override
@@ -65,7 +67,7 @@ public class RoutesByIdServlet extends HttpServlet {
             PrintWriter writer = resp.getWriter();
             writer.write(gson.toJson(route));
         } else {
-            resp.setStatus(400);
+            resp.setStatus(404);
         }
     }
 
@@ -96,45 +98,13 @@ public class RoutesByIdServlet extends HttpServlet {
         }
 
         try {
-            String name = null;
-            Coordinates coordinates = null;
-            Location from = null;
-            Location to = null;
 
-            try {
-                name = req.getParameter("name");
-            } catch (Exception ignored) {
-            }
+            String body = req.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+            Route route = gson.fromJson(body, Route.class);
+            route.setId(routeId);
+            route.preUpdateValidate();
 
-            try {
-                float x = Float.parseFloat(req.getParameter("x"));
-                float y = Float.parseFloat(req.getParameter("y"));
-
-                coordinates = new Coordinates(x, y);
-            } catch (Exception ignored) {
-            }
-
-            try {
-                long fromX = Long.parseLong(req.getParameter("from_x"));
-                long fromY = Long.parseLong(req.getParameter("from_y"));
-                long fromZ = Long.parseLong(req.getParameter("from_z"));
-                String fromName = req.getParameter("from_name");
-
-                from = new Location(fromX, fromY, fromZ, fromName);
-            } catch (Exception ignored) {
-            }
-
-            try {
-                long toX = Long.parseLong(req.getParameter("to_x"));
-                long toY = Long.parseLong(req.getParameter("to_y"));
-                long toZ = Long.parseLong(req.getParameter("to_z"));
-                String toName = req.getParameter("to_name");
-
-                to = new Location(toX, toY, toZ, toName);
-            } catch (Exception ignored) {
-            }
-
-            repository.updateRoute(routeId, name, coordinates, from, to);
+            repository.updateRoute(routeId, route);
             resp.setStatus(200);
         } catch (Exception ex) {
             ex.printStackTrace();
